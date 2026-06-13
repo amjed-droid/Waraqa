@@ -300,7 +300,7 @@ app.post('/api/projects/:id/compile', async (req, res) => {
   }
 
   try {
-    const result = await compileLatex(mainFile.content, id);
+    const result = await compileLatex(mainFile.content, id, project.files);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Compilation server error', details: error.message });
@@ -309,13 +309,13 @@ app.post('/api/projects/:id/compile', async (req, res) => {
 
 // Stateless Compile LaTeX document endpoint (used by remote compilation / Azure)
 app.post('/api/compile', async (req, res) => {
-  const { source } = req.body;
+  const { source, files } = req.body;
   if (!source) {
     return res.status(400).json({ error: 'Source code is required' });
   }
 
   try {
-    const result = await compileLatex(source, 'stateless-compile');
+    const result = await compileLatex(source, 'stateless-compile', files || []);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Compilation server error', details: error.message });

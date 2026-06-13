@@ -1578,7 +1578,7 @@ const AZURE_LATEX_URL = 'https://waraqa-latex.thankfulsky-d6df5537.uaenorth.azur
 /* =========================
    REAL COMPILATION (FIXED SECURITY)
 ========================= */
-export async function compileLatex(source, projectId = 'default') {
+export async function compileLatex(source, projectId = 'default', files = []) {
   const ok = await checkPdfLatex();
   
   if (!ok) {
@@ -1588,7 +1588,7 @@ export async function compileLatex(source, projectId = 'default') {
       const response = await fetch(`${AZURE_LATEX_URL}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source })
+        body: JSON.stringify({ source, files })
       });
       const data = await response.json();
       console.log('[Compiler] Azure compilation completed successfully!');
@@ -1602,6 +1602,15 @@ export async function compileLatex(source, projectId = 'default') {
   const dir = path.join(TEMP_DIR, projectId);
   fs.mkdirSync(dir, { recursive: true });
 
+  // Write all project files to directory
+  if (files && files.length > 0) {
+    for (const file of files) {
+      const filePath = path.join(dir, file.path);
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, file.content);
+    }
+  }
+
   const tex = path.join(dir, 'doc.tex');
   const pdf = path.join(dir, 'doc.pdf');
   const log = path.join(dir, 'doc.log');
@@ -1609,9 +1618,14 @@ export async function compileLatex(source, projectId = 'default') {
   fs.writeFileSync(tex, source);
 
   return new Promise((resolve) => {
-    const cmd = `pdflatex -interaction=nonstopmode -output-directory="${dir}" "${tex}"`;
+    let cmd;
+    if (process.platform === 'win32') {
+      cmd = `cd /d "${dir}" && xelatex -interaction=nonstopmode doc.tex & bibtex doc & xelatex -interaction=nonstopmode doc.tex & xelatex -interaction=nonstopmode doc.tex`;
+    } else {
+      cmd = `cd "${dir}" && xelatex -interaction=nonstopmode doc.tex ; bibtex doc ; xelatex -interaction=nonstopmode doc.tex ; xelatex -interaction=nonstopmode doc.tex`;
+    }
 
-    const child = exec(cmd, { timeout: 15000 }, (err) => {
+    const child = exec(cmd, { timeout: 30000 }, (err) => {
       const logs = [];
 
       if (fs.existsSync(log)) {
@@ -1636,7 +1650,7 @@ export async function compileLatex(source, projectId = 'default') {
     });
 
     /* 🔥 KILL SAFETY */
-    setTimeout(() => child.kill('SIGKILL'), 15000);
+    setTimeout(() => child.kill('SIGKILL'), 30000);
   });
 }
 
