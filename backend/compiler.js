@@ -1573,12 +1573,27 @@ function buildPageHTML({ meta, highlightsHtml, abstractHtml, bodyHtml, isTwoColu
 </div>`;
 }
 
+const AZURE_LATEX_URL = 'https://waraqa-latex.thankfulsky-d6df5537.uaenorth.azurecontainerapps.io';
+
 /* =========================
    REAL COMPILATION (FIXED SECURITY)
 ========================= */
 export async function compileLatex(source, projectId = 'default') {
   const ok = await checkPdfLatex();
-  if (!ok) return simulateCompilation(source);
+  
+  if (!ok) {
+    // استخدم Azure إذا pdflatex غير موجود محلياً
+    try {
+      const response = await fetch(`${AZURE_LATEX_URL}/api/compile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source })
+      });
+      return await response.json();
+    } catch (err) {
+      return simulateCompilation(source);
+    }
+  }
 
   const dir = path.join(TEMP_DIR, projectId);
   fs.mkdirSync(dir, { recursive: true });
