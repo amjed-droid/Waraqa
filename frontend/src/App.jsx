@@ -4071,7 +4071,7 @@ $e = mc^2$
           {/* Console / Terminal logs */}
           <div className="console-panel" style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Unified Console Header with Tabs */}
-            <div className="console-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 12px', height: '36px', background: '#f1f5f9', borderBottom: '1px solid var(--border-color)', direction: 'rtl', flexShrink: 0 }}>
+            <div className="console-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 12px', height: '36px', background: '#f1f5f9', borderBottom: '1px solid var(--border-color)', direction: 'ltr', flexShrink: 0 }}>
               {/* Right side: Tabs */}
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '100%' }}>
                 <button 
@@ -4132,7 +4132,7 @@ $e = mc^2$
               </button>
             </div>
             
-            <div className="console-logs-content" style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px 12px' }}>
+            <div className="console-logs-content" style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px 12px', direction: 'ltr' }}>
               {consoleLogs.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '10px 0' }}>
                   لا توجد سجلات تجميع. قم بتحديث التجميع لعرض التقارير.
@@ -4176,10 +4176,10 @@ $e = mc^2$
                           display: 'flex', 
                           flexDirection: 'column', 
                           backgroundColor: 'var(--bg-secondary)', 
-                          borderRight: `4px solid ${borderLeftColor}`,
+                          borderLeft: `4px solid ${borderLeftColor}`,
                           borderTop: '1px solid var(--border-color)',
                           borderBottom: '1px solid var(--border-color)',
-                          borderLeft: '1px solid var(--border-color)',
+                          borderRight: '1px solid var(--border-color)',
                           borderRadius: 'var(--radius-sm)',
                           marginBottom: '8px',
                           overflow: 'hidden',
@@ -4190,7 +4190,7 @@ $e = mc^2$
                         {/* Header Row */}
                         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', justifyContent: 'space-between', gap: '8px' }}>
                           <div 
-                            style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, cursor: 'pointer', textAlign: 'right' }} 
+                            style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, cursor: 'pointer', textAlign: 'left' }} 
                             onClick={() => {
                               if (log.line) {
                                 jumpToLine(log.line);
@@ -4199,7 +4199,7 @@ $e = mc^2$
                             }}
                           >
                             <span style={{ display: 'inline-flex', marginTop: '3px' }}>
-                              {isExpanded ? <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} /> : <ChevronLeft size={14} style={{ color: 'var(--text-secondary)' }} />}
+                              {isExpanded ? <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} /> : <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />}
                             </span>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                               <span style={{ fontSize: '0.8rem', fontWeight: '500', color: textColor, lineHeight: '1.4' }}>
