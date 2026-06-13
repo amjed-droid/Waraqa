@@ -1774,14 +1774,81 @@ function parseLatexLogs(text) {
   const logs = [];
   if (!text) return logs;
 
-  text.split('\n').forEach(line => {
-    if (line.startsWith('!')) {
-      logs.push({ type: 'error', message: line });
-    }
-    if (line.includes('Warning')) {
-      logs.push({ type: 'warning', message: line });
-    }
-  });
+  const lines = text.split('\n');
+  let currentLog = null;
 
-  return logs;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Check if it's an error line
+    if (line.startsWith('!')) {
+      if (currentLog) {
+        logs.push(currentLog);
+      }
+      currentLog = {
+        type: 'error',
+        message: line.substring(1).trim(),
+        fullMessage: line,
+        line: null,
+        path: 'main.tex'
+      };
+      
+      // Parse subsequent lines for context and line number
+      let j = i + 1;
+      let contextLines = [];
+      while (j < lines.length && !lines[j].trim().startsWith('!')) {
+        const nextLine = lines[j];
+        const nextLineTrimmed = nextLine.trim();
+        
+        // Skip some noisy pdflatex console prompt lines
+        if (nextLineTrimmed.startsWith('Type  H <return>') || 
+            nextLineTrimmed.startsWith('See the LaTeX manual') ||
+            nextLineTrimmed.startsWith('Enter file name:')) {
+          j++;
+          continue;
+        }
+
+        // Check for line number (e.g., "l.15 \author" or "on input line 15")
+        const lineMatch = nextLineTrimmed.match(/^l\.(\d+)/) || nextLineTrimmed.match(/on input line (\d+)/);
+        if (lineMatch) {
+          currentLog.line = parseInt(lineMatch[1], 10);
+        }
+        
+        if (nextLineTrimmed) {
+          contextLines.push(nextLine);
+        }
+        j++;
+        if (j - i > 12) break; // Limit context search to avoid grabbing too much
+      }
+      if (contextLines.length > 0) {
+        currentLog.fullMessage += '\n' + contextLines.join('\n');
+      }
+      // Skip processed lines
+      i = j - 1;
+    } 
+    // Check if it's a warning line
+    else if (line.includes('Warning:')) {
+      if (currentLog) {
+        logs.push(currentLog);
+        currentLog = null;
+      }
+      // Extract line number if present in warning line
+      const lineMatch = line.match(/on input line (\d+)/) || line.match(/:(\d+):/);
+      const warningLog = {
+        type: 'warning',
+        message: line,
+        fullMessage: line,
+        line: lineMatch ? parseInt(lineMatch[1], 10) : null,
+        path: 'main.tex'
+      };
+      logs.push(warningLog);
+    }
+  }
+  
+  if (currentLog) {
+    logs.push(currentLog);
+  }
+
+  // Filter out noisy empty or duplicate logs
+  return logs.filter(log => log.message && log.message.trim() !== '' && log.message.trim() !== '!');
 }

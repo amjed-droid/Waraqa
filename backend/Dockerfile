@@ -7,6 +7,7 @@ RUN apt-get update -qq && \
         texlive \
         texlive-latex-extra \
         texlive-publishers \
+        texlive-xetex \
         latexmk \
     && rm -rf /var/lib/apt/lists/*
 
