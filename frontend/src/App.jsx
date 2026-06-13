@@ -74,6 +74,8 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Target,
   Terminal,
   Settings,
   FolderPlus,
@@ -711,6 +713,8 @@ function App() {
   const [syntaxChecks, setSyntaxChecks] = useState(true); // true | false
   const [errorHandling, setErrorHandling] = useState('ignore'); // 'stop' | 'ignore'
   const [showCompileSettings, setShowCompileSettings] = useState(false);
+  const [logFilter, setLogFilter] = useState('all'); // 'all' | 'error' | 'warning' | 'info'
+  const [expandedLogs, setExpandedLogs] = useState({});
   const [showBreadcrumbs, setShowBreadcrumbs] = useState(true);
   const [showEquationPreview, setShowEquationPreview] = useState(true);
   const [activeMathText, setActiveMathText] = useState('');
@@ -989,6 +993,29 @@ function App() {
       editorRef.current.setPosition({ lineNumber, column: 1 });
       editorRef.current.focus();
     }
+  };
+
+  const getAiSuggestion = (message) => {
+    const msg = message.toLowerCase();
+    if (msg.includes('token not allowed in a pdf string')) {
+      return "استخدم الأمر \\texorpdfstring{الكود البرمجي}{النص العادي} للمصطلحات الرياضية أو الأوامر داخل عناوين الأقسام لتفادي هذا التحذير في فهرس PDF.";
+    }
+    if (msg.includes('float specifier changed to')) {
+      return "قم بتغيير محدد موضع العناصر العائمة (مثل الجداول أو الصور) من [h] إلى [!ht] أو [H] لضمان توزيعها وموضعها بشكل مناسب.";
+    }
+    if (msg.includes('underfull \\hbox')) {
+      return "هذا يعني أن السطر يحتوي على كلمات متباعدة جداً. يمكنك حل هذا باستخدام \\sloppy أو إعادة كتابة الجملة لتوزيع الكلمات بشكل أفضل.";
+    }
+    if (msg.includes('underfull \\vbox')) {
+      return "هناك فراغ عمودي كبير في الصفحة. يمكن معالجته عبر إزالة الأسطر الفارغة الزائدة أو استخدام \\raggedbottom لمنع تمدد الصفحات عمودياً.";
+    }
+    if (msg.includes('unicode character')) {
+      return "تأكد من اختيار خط يدعم اللغة العربية وتفعيل خيار التجميع XeLaTeX من إعدادات التجميع لتصيير الحروف العربية بنجاح.";
+    }
+    if (msg.includes('not found') || msg.includes('undefined control sequence')) {
+      return "تأكد من كتابة اسم الأمر بشكل صحيح أو إضافة حزمة التنسيق المفقودة (\\usepackage{...}) في ديباجة المستند.";
+    }
+    return "تحقق من الصياغة النحوية لـ LaTeX وتأكد من إغلاق كافة الأقواس والمجموعات بشكل صحيح.";
   };
 
   // Compile LaTeX Document
@@ -4042,59 +4069,191 @@ $e = mc^2$
           </div>
 
           {/* Console / Terminal logs */}
-          <div className="console-panel">
-            <div className="console-header">
+          <div className="console-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '0' }}>
+            <div className="console-header" style={{ paddingBottom: '6px' }}>
               <span className="console-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Terminal size={14} /> سجل التجميع والأخطاء
               </span>
               <button 
-                onClick={() => setConsoleLogs([])} 
+                onClick={() => {
+                  setConsoleLogs([]);
+                  setExpandedLogs({});
+                }} 
                 style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}
               >
                 مسح السجلات
               </button>
             </div>
+
+            {/* Custom Tab Filters */}
+            <div className="console-tabs" style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', padding: '4px 12px 8px 12px', marginBottom: '10px', direction: 'rtl' }}>
+              <button 
+                onClick={() => setLogFilter('all')}
+                style={{ 
+                  background: 'none', border: 'none', color: logFilter === 'all' ? 'var(--accent-color)' : 'var(--text-secondary)', 
+                  fontWeight: logFilter === 'all' ? 'bold' : 'normal', borderBottom: logFilter === 'all' ? '2px solid var(--accent-color)' : '2px solid transparent', 
+                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
+                }}
+              >
+                <span>الكل (All logs)</span>
+                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.length}</span>
+              </button>
+              <button 
+                onClick={() => setLogFilter('error')}
+                style={{ 
+                  background: 'none', border: 'none', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', 
+                  fontWeight: logFilter === 'error' ? 'bold' : 'normal', borderBottom: logFilter === 'error' ? '2px solid var(--error)' : '2px solid transparent', 
+                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
+                }}
+              >
+                <span>الأخطاء (Errors)</span>
+                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'var(--bg-tertiary)', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'error').length}</span>
+              </button>
+              <button 
+                onClick={() => setLogFilter('warning')}
+                style={{ 
+                  background: 'none', border: 'none', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', 
+                  fontWeight: logFilter === 'warning' ? 'bold' : 'normal', borderBottom: logFilter === 'warning' ? '2px solid var(--warning)' : '2px solid transparent', 
+                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
+                }}
+              >
+                <span>التحذيرات (Warnings)</span>
+                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'warning' ? 'rgba(217, 119, 6, 0.1)' : 'var(--bg-tertiary)', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'warning').length}</span>
+              </button>
+              <button 
+                onClick={() => setLogFilter('info')}
+                style={{ 
+                  background: 'none', border: 'none', color: logFilter === 'info' ? 'var(--info)' : 'var(--text-secondary)', 
+                  fontWeight: logFilter === 'info' ? 'bold' : 'normal', borderBottom: logFilter === 'info' ? '2px solid var(--info)' : '2px solid transparent', 
+                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
+                }}
+              >
+                <span>معلومات (Info)</span>
+                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'info' || l.type === 'success' || !l.type).length}</span>
+              </button>
+            </div>
             
-            <div className="console-logs-content">
+            <div className="console-logs-content" style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px 12px' }}>
               {consoleLogs.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '10px 0' }}>
                   لا توجد سجلات تجميع. قم بتحديث التجميع لعرض التقارير.
                 </div>
               ) : (
-                consoleLogs.map((log, index) => {
-                  let Icon = Terminal;
-                  let colorClass = 'info';
-                  if (log.type === 'error') {
-                    Icon = XCircle;
-                    colorClass = 'error';
-                  } else if (log.type === 'warning') {
-                    Icon = AlertTriangle;
-                    colorClass = 'warning';
-                  } else if (log.type === 'success') {
-                    Icon = CheckCircle;
-                    colorClass = 'success';
+                (() => {
+                  const filtered = consoleLogs.filter(log => {
+                    if (logFilter === 'error') return log.type === 'error';
+                    if (logFilter === 'warning') return log.type === 'warning';
+                    if (logFilter === 'info') return log.type === 'info' || log.type === 'success' || !log.type;
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '10px 0' }}>
+                        لا توجد سجلات تطابق الفلتر المختار.
+                      </div>
+                    );
                   }
 
-                  return (
-                    <div 
-                      key={index} 
-                      className={`log-line ${colorClass}`}
-                      style={{ cursor: log.line ? 'pointer' : 'default' }}
-                      onClick={() => {
-                        if (log.line) {
-                          jumpToLine(log.line);
-                        }
-                      }}
-                    >
-                      <Icon size={13} style={{ flexShrink: 0, marginTop: '2px' }} />
-                      <span style={{ fontSize: '0.8rem' }}>
-                        {log.time ? `[${log.time}] ` : ''}
-                        {log.line ? `[السطر ${log.line}]: ` : ''}
-                        {log.message}
-                      </span>
-                    </div>
-                  );
-                })
+                  return filtered.map((log, index) => {
+                    const isExpanded = !!expandedLogs[index];
+                    const isAiExpanded = !!expandedLogs[`ai_${index}`];
+                    let borderLeftColor = 'var(--info)';
+                    let textColor = 'var(--text-primary)';
+                    if (log.type === 'error') {
+                      borderLeftColor = 'var(--error)';
+                      textColor = 'var(--error)';
+                    } else if (log.type === 'warning') {
+                      borderLeftColor = 'var(--warning)';
+                      textColor = 'var(--warning)';
+                    }
+
+                    const displayPath = log.path ? log.path.replace('doc.tex', 'main.tex') : './main.tex';
+
+                    return (
+                      <div 
+                        key={index} 
+                        style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          backgroundColor: 'var(--bg-secondary)', 
+                          borderRight: `4px solid ${borderLeftColor}`,
+                          borderTop: '1px solid var(--border-color)',
+                          borderBottom: '1px solid var(--border-color)',
+                          borderLeft: '1px solid var(--border-color)',
+                          borderRadius: 'var(--radius-sm)',
+                          marginBottom: '8px',
+                          overflow: 'hidden',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {/* Header Row */}
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', justifyContent: 'space-between', gap: '8px' }}>
+                          <div 
+                            style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, cursor: 'pointer', textAlign: 'right' }} 
+                            onClick={() => setExpandedLogs(prev => ({ ...prev, [index]: !prev[index] }))}
+                          >
+                            <span style={{ display: 'inline-flex', marginTop: '3px' }}>
+                              {isExpanded ? <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} /> : <ChevronLeft size={14} style={{ color: 'var(--text-secondary)' }} />}
+                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: '500', color: textColor, lineHeight: '1.4' }}>
+                                {log.message}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                {displayPath}{log.line ? `, السطر ${log.line}` : ''}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {log.line && (
+                              <button 
+                                className="toolbar-btn" 
+                                style={{ padding: '4px', borderRadius: '4px', background: 'transparent' }} 
+                                onClick={() => jumpToLine(log.line)}
+                                title="الانتقال إلى السطر في المحرر"
+                              >
+                                <Target size={14} style={{ color: 'var(--text-secondary)' }} />
+                              </button>
+                            )}
+                            <button 
+                              className="toolbar-btn" 
+                              style={{ padding: '4px', borderRadius: '4px', background: 'transparent', color: isAiExpanded ? 'var(--success)' : 'var(--text-secondary)' }} 
+                              onClick={() => setExpandedLogs(prev => ({ ...prev, [`ai_${index}`]: !prev[`ai_${index}`] }))}
+                              title="اقتراح الذكاء الاصطناعي للإصلاح"
+                            >
+                              <Sparkles size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Expanded details */}
+                        {isExpanded && (
+                          <div style={{ padding: '8px 12px', borderTop: '1px dashed var(--border-color)', backgroundColor: 'var(--bg-tertiary)', fontSize: '0.75rem', color: 'var(--text-secondary)', direction: 'ltr', textAlign: 'left', overflowX: 'auto' }}>
+                            <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                              {log.fullMessage || log.message}
+                            </pre>
+                          </div>
+                        )}
+
+                        {/* AI Suggestion */}
+                        {isAiExpanded && (
+                          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(22, 163, 74, 0.2)', backgroundColor: 'rgba(22, 163, 74, 0.04)', fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 'bold' }}>
+                              <Sparkles size={12} />
+                              <span>مساعد الذكاء الاصطناعي (AI Assistant):</span>
+                            </div>
+                            <span style={{ lineHeight: '1.5', color: 'var(--text-secondary)' }}>
+                              {getAiSuggestion(log.message)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  });
+                })()
               )}
             </div>
           </div>
