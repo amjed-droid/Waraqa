@@ -1708,6 +1708,44 @@ function checkLatexSyntax(source) {
    REAL COMPILATION (FIXED SECURITY)
 ========================= */
 export async function compileLatex(source, projectId = 'default', files = [], options = {}) {
+  // Detect missing graphics and inject stubs into files
+  const graphicsRegex = /\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}/g;
+  let match;
+  const stubPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const stubPdfBase64 = Buffer.from(
+    '%PDF-1.4\n' +
+    '1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n' +
+    '2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n' +
+    '3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources <<>> /Contents 4 0 R>> endobj\n' +
+    '4 0 obj <</Length 0>> stream\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000056 00000 n \n0000000111 00000 n \n0000000212 00000 n \ntrailer <</Size 5 /Root 1 0 R>>\nstartxref\n261\n%%EOF'
+  ).toString('base64');
+
+  const mutableFiles = [...(files || [])];
+  while ((match = graphicsRegex.exec(source)) !== null) {
+    const imgPath = match[1].trim();
+    const exists = mutableFiles.some(f => f.path === imgPath);
+    if (!exists) {
+      if (imgPath.endsWith('.pdf')) {
+        mutableFiles.push({
+          path: imgPath,
+          content: stubPdfBase64,
+          encoding: 'base64'
+        });
+      } else {
+        const fullImgPath = imgPath.includes('.') ? imgPath : `${imgPath}.png`;
+        const extExists = mutableFiles.some(f => f.path === fullImgPath);
+        if (!extExists) {
+          mutableFiles.push({
+            path: fullImgPath,
+            content: stubPngBase64,
+            encoding: 'base64'
+          });
+        }
+      }
+    }
+  }
+  files = mutableFiles;
+
   const ok = await checkPdfLatex();
   
   // Syntax checks if enabled
@@ -1753,7 +1791,8 @@ export async function compileLatex(source, projectId = 'default', files = [], op
     for (const file of files) {
       const filePath = path.join(dir, file.path);
       fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, file.content);
+      const fileContent = file.encoding === 'base64' ? Buffer.from(file.content, 'base64') : file.content;
+      fs.writeFileSync(filePath, fileContent);
     }
   }
 
@@ -1781,32 +1820,54 @@ export async function compileLatex(source, projectId = 'default', files = [], op
       }
     }
 
-    const child = exec(cmd, { timeout: 30000 }, (err) => {
-      const logs = [];
+    const runExec = (attempt = 1) => {
+      const child = exec(cmd, { timeout: 30000 }, (err) => {
+        const logs = [];
+        let hasAuxError = false;
 
-      if (fs.existsSync(log)) {
-        const content = fs.readFileSync(log, 'utf8');
-        logs.push(...parseLatexLogs(content));
-      }
+        if (fs.existsSync(log)) {
+          const content = fs.readFileSync(log, 'utf8');
+          hasAuxError = content.includes('File ended while scanning use of \\@newl@bel.');
+          logs.push(...parseLatexLogs(content));
+        }
 
-      if (fs.existsSync(pdf)) {
-        const base64 = fs.readFileSync(pdf).toString('base64');
-        return resolve({
-          pdf: `data:application/pdf;base64,${base64}`,
-          logs,
-          success: true
+        if (hasAuxError && attempt < 2) {
+          console.warn('[Compiler] Detected corrupted .aux file. Deleting auxiliary files and retrying...');
+          try {
+            // Delete all files in the build dir except .tex and uploaded files
+            const filesInDir = fs.readdirSync(dir);
+            for (const f of filesInDir) {
+              if (!f.endsWith('.tex') && f !== 'doc.tex' && (!files || !files.some(pf => pf.path === f))) {
+                fs.rmSync(path.join(dir, f), { recursive: true, force: true });
+              }
+            }
+            return resolve(runExec(attempt + 1));
+          } catch (retryErr) {
+            console.error('[Compiler] Retry cleanup failed:', retryErr.message);
+          }
+        }
+
+        if (fs.existsSync(pdf)) {
+          const base64 = fs.readFileSync(pdf).toString('base64');
+          return resolve({
+            pdf: `data:application/pdf;base64,${base64}`,
+            logs,
+            success: true
+          });
+        }
+
+        resolve({
+          pdf: null,
+          logs: [...logs, { type: 'error', message: 'No PDF generated' }],
+          success: false
         });
-      }
-
-      resolve({
-        pdf: null,
-        logs: [...logs, { type: 'error', message: 'No PDF generated' }],
-        success: false
       });
-    });
 
-    /* 🔥 KILL SAFETY */
-    setTimeout(() => child.kill('SIGKILL'), 30000);
+      /* 🔥 KILL SAFETY */
+      setTimeout(() => child.kill('SIGKILL'), 30000);
+    };
+
+    runExec(1);
   });
 }
 
