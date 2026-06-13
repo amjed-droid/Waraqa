@@ -1584,13 +1584,17 @@ export async function compileLatex(source, projectId = 'default') {
   if (!ok) {
     // استخدم Azure إذا pdflatex غير موجود محلياً
     try {
+      console.log(`[Compiler] Local pdflatex not found. Forwarding compilation request to Azure Container App (${AZURE_LATEX_URL})...`);
       const response = await fetch(`${AZURE_LATEX_URL}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source })
       });
-      return await response.json();
+      const data = await response.json();
+      console.log('[Compiler] Azure compilation completed successfully!');
+      return data;
     } catch (err) {
+      console.warn('[Compiler] Azure compilation failed. Falling back to local simulation engine. Error:', err.message);
       return simulateCompilation(source);
     }
   }
