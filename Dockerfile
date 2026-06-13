@@ -1,18 +1,18 @@
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    texlive-latex-base \
-    texlive-latex-recommended \
-    texlive-fonts-recommended \
-    texlive-latex-extra \
-    latexmk \
-    && apt-get clean \
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qq && \
+    apt-get install -y -qq --no-install-recommends \
+        texlive \
+        texlive-latex-extra \
+        texlive-publishers \
+        latexmk \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
 COPY package.json ./
-RUN npm install --legacy-peer-deps --no-optional
+RUN npm install --legacy-peer-deps
 COPY . .
 
 EXPOSE 5000
