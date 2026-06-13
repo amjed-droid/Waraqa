@@ -215,7 +215,7 @@ const LATEX_SYMBOLS = {
   ]
 };
 
-const BACKEND_URL = 'https://waraqa-latex.thankfulsky-d6df5537.uaenorth.azurecontainerapps.io';
+const BACKEND_URL = 'http://localhost:5000';
 
 
 // 1. Lexer (Tokenization)
