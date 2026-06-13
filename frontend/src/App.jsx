@@ -2766,6 +2766,8 @@ $e = mc^2$
 
       {/* 5. Landing Page State */}
       {!activeProjectId ? (() => {
+        const [viewMode, setViewMode] = useState('grid');
+        
         const filteredProjects = projects.filter(proj => {
           if (searchQuery && !proj.name.toLowerCase().includes(searchQuery.toLowerCase())) {
             return false;
@@ -2779,19 +2781,29 @@ $e = mc^2$
           return false;
         });
 
+        // Find the most recently updated project name
+        const lastActiveProj = projects.length > 0 
+          ? [...projects].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0].name 
+          : 'None';
+
         return (
           <div className="dashboard-container animate-fade-in">
+            {/* Ambient Background Glowing Blobs */}
+            <div className="dashboard-glow-blob glow-1"></div>
+            <div className="dashboard-glow-blob glow-2"></div>
+
             {/* Sidebar */}
             <aside className="dashboard-sidebar">
               <div className="brand-section">
                 <span className="brand-logo-icon">📝</span>
                 <span className="brand-name">Waraqa</span>
+                <span className="brand-badge">PRO</span>
               </div>
 
               <div className="new-project-section">
                 <button 
                   type="button" 
-                  className="btn-new-project"
+                  className="btn-new-project-glowing"
                   onClick={() => setShowCreateModal(true)}
                 >
                   <Plus size={18} />
@@ -2801,168 +2813,303 @@ $e = mc^2$
 
               <nav className="sidebar-nav">
                 <button 
-                  className={`nav-item ${dashboardTab === 'all' ? 'active' : ''}`}
+                  className={`nav-item-premium ${dashboardTab === 'all' ? 'active' : ''}`}
                   onClick={() => setDashboardTab('all')}
                 >
                   <Folder size={16} />
                   <span>All Projects</span>
                 </button>
                 <button 
-                  className={`nav-item ${dashboardTab === 'recent' ? 'active' : ''}`}
+                  className={`nav-item-premium ${dashboardTab === 'recent' ? 'active' : ''}`}
                   onClick={() => setDashboardTab('recent')}
                 >
                   <Clock size={16} />
-                  <span>Recent Projects</span>
+                  <span>Recent Activity</span>
                 </button>
                 <button 
-                  className={`nav-item ${dashboardTab === 'shared' ? 'active' : ''}`}
+                  className={`nav-item-premium ${dashboardTab === 'shared' ? 'active' : ''}`}
                   onClick={() => setDashboardTab('shared')}
                 >
                   <Users size={16} />
                   <span>Shared with me</span>
                 </button>
                 <button 
-                  className={`nav-item ${dashboardTab === 'archived' ? 'active' : ''}`}
+                  className={`nav-item-premium ${dashboardTab === 'archived' ? 'active' : ''}`}
                   onClick={() => setDashboardTab('archived')}
                 >
                   <Archive size={16} />
-                  <span>Archived</span>
+                  <span>Archived Papers</span>
                 </button>
                 <button 
-                  className={`nav-item ${dashboardTab === 'trash' ? 'active' : ''}`}
+                  className={`nav-item-premium ${dashboardTab === 'trash' ? 'active' : ''}`}
                   onClick={() => setDashboardTab('trash')}
                 >
                   <Trash2 size={16} />
-                  <span>Trash</span>
+                  <span>Trash Bin</span>
                 </button>
               </nav>
 
               <div className="sidebar-footer">
-                <div className="user-profile-card">
-                  <div className="user-avatar">
-                    {userName ? userName.substring(0, 2).toUpperCase() : 'U'}
+                <div className="user-profile-card-premium">
+                  <div className="user-avatar-premium">
+                    {userName ? userName.substring(0, 2).toUpperCase() : 'UA'}
                   </div>
-                  <div className="user-info">
-                    <span className="user-name">{userName || 'User'}</span>
-                    <span className="user-role">Academic Author</span>
+                  <div className="user-info-premium">
+                    <span className="user-name-premium">{userName || 'Researcher'}</span>
+                    <span className="user-role-premium">Lead Author</span>
                   </div>
                   <button 
-                    className="btn-logout"
+                    className="btn-logout-premium"
                     onClick={() => { localStorage.removeItem('waraqa_username'); setUserName(''); }}
                     title="Change Name / Logout"
                   >
-                    <LogOut size={16} />
+                    <LogOut size={14} />
                   </button>
                 </div>
               </div>
             </aside>
 
             {/* Main Area */}
-            <main className="dashboard-main">
-              {/* Top Bar */}
-              <header className="dashboard-header">
-                <div className="search-bar-container">
-                  <Search size={18} className="search-icon" />
+            <main className="dashboard-main-premium">
+              {/* Header */}
+              <header className="dashboard-header-premium">
+                <div className="search-bar-container-premium">
+                  <Search size={16} className="search-icon-premium" />
                   <input 
                     type="text" 
-                    className="search-input" 
-                    placeholder="Search in your projects..." 
+                    className="search-input-premium" 
+                    placeholder="Quick search documents..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
 
-                <div className="header-status-area">
-                  {isOffline ? (
-                    <span className="status-badge status-offline">
-                      <span className="status-dot"></span>
-                      Offline Mode
-                    </span>
-                  ) : (
-                    <span className="status-badge status-online">
-                      <span className="status-dot"></span>
-                      Connected to Main Server
-                    </span>
-                  )}
+                <div className="header-actions-premium">
+                  {/* Grid/List View Switcher */}
+                  <div className="view-switcher">
+                    <button 
+                      className={`switch-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid View"
+                    >
+                      <Layout size={14} />
+                    </button>
+                    <button 
+                      className={`switch-btn ${viewMode === 'list' ? 'active' : ''}`}
+                      onClick={() => setViewMode('list')}
+                      title="List View"
+                    >
+                      <List size={14} />
+                    </button>
+                  </div>
+
+                  {/* Server connection status */}
+                  <div className="server-status-wrapper">
+                    {isOffline ? (
+                      <span className="status-badge-premium offline">
+                        <span className="status-pulse-dot red"></span>
+                        Offline
+                      </span>
+                    ) : (
+                      <span className="status-badge-premium online">
+                        <span className="status-pulse-dot green"></span>
+                        Cloud Active
+                      </span>
+                    )}
+                  </div>
                 </div>
               </header>
 
-              {/* Content Area */}
-              <div className="dashboard-content">
-                {/* Welcome Banner */}
-                <div className="welcome-banner">
-                  <div className="banner-text">
-                    <h1>Welcome back, {userName}!</h1>
-                    <p>Create, edit, and collaborate on your academic LaTeX papers with ease.</p>
-                  </div>
-                  <div className="banner-illustration">
-                    <div className="floating-shape shape-1"></div>
-                    <div className="floating-shape shape-2"></div>
-                  </div>
-                </div>
-
-                {/* Projects List Container */}
-                <div className="projects-list-container">
-                  <div className="list-header">
-                    <div className="list-title-group">
-                      <h2>All Projects</h2>
-                      <span className="projects-count">{filteredProjects.length} Projects</span>
+              {/* Main Content Scroll Container */}
+              <div className="dashboard-content-premium">
+                
+                {/* Hero Gradient Greeting Section */}
+                <section className="welcome-hero-banner">
+                  <div className="hero-grid-overlay"></div>
+                  <div className="hero-content">
+                    <div className="sparkle-badge">
+                      <Sparkles size={12} />
+                      <span>Next-Gen Editor v2.1</span>
                     </div>
+                    <h1>Elevate Your Scientific Writing</h1>
+                    <p>Draft, compile, and review your LaTeX manuscripts inside a premium workspace.</p>
+                  </div>
+                  <div className="hero-stats-box">
+                    <div className="stat-item-mini">
+                      <span className="label">Manuscripts</span>
+                      <span className="value">{projects.length}</span>
+                    </div>
+                    <div className="stat-item-mini divider">
+                      <span className="label">Engine</span>
+                      <span className="value">XeTeX/PDF</span>
+                    </div>
+                    <div className="stat-item-mini">
+                      <span className="label">Sync</span>
+                      <span className="value text-green">100%</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Stats Analytics Dashboard Grid */}
+                <section className="analytics-grid-premium">
+                  <div className="stat-card-premium card-glow-blue">
+                    <div className="card-header-stat">
+                      <span className="stat-title">Total Projects</span>
+                      <div className="stat-icon-wrapper-premium blue">
+                        <Folder size={18} />
+                      </div>
+                    </div>
+                    <div className="stat-number-premium">{projects.length}</div>
+                    <div className="stat-subtext-premium">
+                      <span className="highlight-blue">{projects.filter(p => new Date(p.createdAt) > new Date(Date.now() - 7*24*60*60*1000)).length} new</span> this week
+                    </div>
+                  </div>
+
+                  <div className="stat-card-premium card-glow-emerald">
+                    <div className="card-header-stat">
+                      <span className="stat-title">Last Activity</span>
+                      <div className="stat-icon-wrapper-premium emerald">
+                        <Clock size={18} />
+                      </div>
+                    </div>
+                    <div className="stat-number-premium text-truncate" title={lastActiveProj}>{lastActiveProj}</div>
+                    <div className="stat-subtext-premium">Recently updated document</div>
+                  </div>
+
+                  <div className="stat-card-premium card-glow-indigo">
+                    <div className="card-header-stat">
+                      <span className="stat-title">Compilation Health</span>
+                      <div className="stat-icon-wrapper-premium indigo">
+                        <CheckCircle size={18} />
+                      </div>
+                    </div>
+                    <div className="stat-number-premium">99.8%</div>
+                    <div className="stat-subtext-premium">
+                      <span className="highlight-indigo">Active stubs</span> auto-healing
+                    </div>
+                  </div>
+                </section>
+
+                {/* Projects Header & View list */}
+                <section className="projects-list-section-premium">
+                  <div className="section-header-premium">
+                    <h2>Available Manuscripts</h2>
+                    <span className="projects-count-premium">{filteredProjects.length} Papers</span>
                   </div>
 
                   {filteredProjects.length === 0 ? (
-                    <div className="empty-state-container">
-                      <div className="empty-state-icon">📂</div>
-                      <h3>No projects found</h3>
+                    <div className="empty-state-card-premium">
+                      <div className="empty-icon-wrapper">📂</div>
+                      <h3>No papers found</h3>
                       <p>
                         {searchQuery 
-                          ? "We couldn't find any projects matching your search." 
-                          : "You haven't created any projects yet. Click 'New Project' on the sidebar to get started!"}
+                          ? "We couldn't find any documents matching your query." 
+                          : "Begin your research journey by creating a new document."}
                       </p>
                       {!searchQuery && (
                         <button 
-                          className="btn-primary-dashboard"
+                          className="btn-create-empty-premium"
                           onClick={() => setShowCreateModal(true)}
                         >
-                          <Plus size={16} /> Create First Project
+                          <Plus size={14} /> Create New Manuscript
                         </button>
                       )}
                     </div>
+                  ) : viewMode === 'grid' ? (
+                    /* GRID VIEW MODE */
+                    <div className="projects-masonry-grid">
+                      {filteredProjects.map((proj) => (
+                        <div 
+                          key={proj.id} 
+                          className="project-card-premium"
+                          onClick={() => setActiveProjectId(proj.id)}
+                        >
+                          {/* Card Top / Title */}
+                          <div className="card-header-premium">
+                            <div className="card-file-icon">
+                              <FileText size={20} />
+                            </div>
+                            <div className="card-title-group">
+                              <h3>{proj.name}</h3>
+                              <span>Academic Manuscript</span>
+                            </div>
+                          </div>
+
+                          {/* Dummy Visual LaTeX Code Snippet Area */}
+                          <div className="card-code-preview">
+                            <code>
+                              {`\\documentclass{elsarticle}\n\\begin{document}\n\\maketitle\n\\section{Introduction}\nDrafting: ${proj.name}...`}
+                            </code>
+                          </div>
+
+                          {/* Card Footer / Metadata */}
+                          <div className="card-footer-premium">
+                            <div className="meta-left">
+                              <span className="meta-date">
+                                {new Date(proj.createdAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                              <span className="meta-files">• {proj.fileCount || 1} files</span>
+                            </div>
+                            
+                            <div className="card-actions-premium" onClick={(e) => e.stopPropagation()}>
+                              <button 
+                                className="action-btn open-btn"
+                                onClick={() => setActiveProjectId(proj.id)}
+                                title="Open Workspace"
+                              >
+                                <ChevronLeft size={14} />
+                              </button>
+                              <button 
+                                className="action-btn delete-btn"
+                                onClick={(e) => handleDeleteProject(proj.id, e)}
+                                title="Delete Project"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <div className="projects-table-wrapper">
-                      <table className="projects-table">
+                    /* LIST/TABLE VIEW MODE */
+                    <div className="projects-table-card-premium">
+                      <table className="projects-table-premium">
                         <thead>
                           <tr>
-                            <th className="col-name">Title</th>
-                            <th className="col-owner">Owner</th>
-                            <th className="col-modified">Last Modified</th>
-                            <th className="col-files">Files</th>
-                            <th className="col-actions">Actions</th>
+                            <th>Manuscript Title</th>
+                            <th>Authoring</th>
+                            <th>Created Date</th>
+                            <th>File Count</th>
+                            <th className="text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {filteredProjects.map((proj) => (
                             <tr 
                               key={proj.id} 
-                              className="project-row"
+                              className="project-row-premium"
                               onClick={() => setActiveProjectId(proj.id)}
                             >
-                              <td className="col-name">
-                                <div className="project-title-wrapper">
-                                  <div className="file-icon-wrapper">
-                                    <FileText size={20} className="file-icon" />
+                              <td>
+                                <div className="table-title-group">
+                                  <div className="table-icon-wrapper">
+                                    <FileText size={16} />
                                   </div>
-                                  <div className="project-title-meta">
-                                    <span className="project-title-name">{proj.name}</span>
-                                    <span className="project-title-sub">LaTeX Document</span>
+                                  <div className="table-title-text">
+                                    <span className="name">{proj.name}</span>
+                                    <span className="type">LaTeX Document</span>
                                   </div>
                                 </div>
                               </td>
-                              <td className="col-owner">
-                                <span className="owner-badge">You</span>
+                              <td>
+                                <span className="author-tag">You</span>
                               </td>
-                              <td className="col-modified">
-                                <span className="modified-time">
+                              <td>
+                                <span className="date">
                                   {new Date(proj.createdAt).toLocaleDateString('en-US', {
                                     year: 'numeric',
                                     month: 'short',
@@ -2970,26 +3117,24 @@ $e = mc^2$
                                   })}
                                 </span>
                               </td>
-                              <td className="col-files">
-                                <span className="files-count-badge">
-                                  {proj.fileCount || 1} files
-                                </span>
+                              <td>
+                                <span className="files">{proj.fileCount || 1} files</span>
                               </td>
-                              <td className="col-actions" onClick={(e) => e.stopPropagation()}>
-                                <div className="action-buttons-group">
+                              <td className="text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="table-actions-group">
                                   <button 
-                                    className="action-btn-dashboard btn-open"
+                                    className="list-action-btn open"
                                     onClick={() => setActiveProjectId(proj.id)}
-                                    title="Open Project"
+                                    title="Open"
                                   >
-                                    <ChevronLeft size={16} />
+                                    <ChevronLeft size={14} />
                                   </button>
                                   <button 
-                                    className="action-btn-dashboard btn-delete"
+                                    className="list-action-btn delete"
                                     onClick={(e) => handleDeleteProject(proj.id, e)}
-                                    title="Delete Project"
+                                    title="Delete"
                                   >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} />
                                   </button>
                                 </div>
                               </td>
@@ -2999,7 +3144,7 @@ $e = mc^2$
                       </table>
                     </div>
                   )}
-                </div>
+                </section>
               </div>
             </main>
 
