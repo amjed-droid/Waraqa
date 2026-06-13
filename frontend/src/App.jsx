@@ -1259,14 +1259,14 @@ function App() {
     if (win) {
       win.document.write(`
         <!DOCTYPE html>
-        <html lang="ar" dir="rtl">
+        <html lang="en" dir="ltr">
         <head>
           <meta charset="utf-8">
-          <title>${activeProject?.name || 'معاينة ورقة'}</title>
+          <title>${activeProject?.name || 'Waraqa Preview'}</title>
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-          <link href="https://fonts.googleapis.com/css2?family=Cairo&family=Amiri&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Outfit&display=swap" rel="stylesheet">
           <style>
-            body { background: #f1f5f9; padding: 2rem; display: flex; justify-content: center; font-family: 'Amiri', serif; direction: rtl; }
+            body { background: #f1f5f9; padding: 2rem; display: flex; justify-content: center; font-family: 'Times New Roman', serif; direction: ltr; }
             .latex-document-container { width: 100%; max-width: 800px; }
             .latex-page { background: white; padding: 1.5in 1in 1in 1in; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; }
             .latex-title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
@@ -2248,7 +2248,7 @@ $e = mc^2$
       
       printWindow.document.write(`
         <!DOCTYPE html>
-        <html lang="ar" dir="rtl">
+        <html lang="en" dir="ltr">
         <head>
           <title>${activeProject.name}</title>
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
@@ -2310,7 +2310,7 @@ $e = mc^2$
         <meta charset="utf-8">
         <title>${activeProject.name}</title>
         <style>
-          body { font-family: 'Times New Roman', serif; direction: rtl; }
+          body { font-family: 'Times New Roman', serif; direction: ltr; }
           .latex-title { text-align: center; font-size: 24px; font-weight: bold; }
           .latex-author { text-align: center; font-size: 14px; }
           .latex-date { text-align: center; font-size: 12px; }
@@ -2365,14 +2365,14 @@ $e = mc^2$
     const docHtml = document.getElementById('preview-box').innerHTML;
     const fullHtml = `
       <!DOCTYPE html>
-      <html lang="ar" dir="rtl">
+      <html lang="en" dir="ltr">
       <head>
         <meta charset="utf-8">
         <title>${activeProject.name}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
         <style>
-          body { background-color: #f1f5f9; padding: 2rem; display: flex; justify-content: center; font-family: 'Amiri', serif; }
+          body { background-color: #f1f5f9; padding: 2rem; display: flex; justify-content: center; font-family: 'Times New Roman', serif; }
           .latex-document-container { width: 100%; max-width: 800px; }
           .latex-page { background: white; color: black; padding: 1.5in 1in 1in 1in; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; }
           .latex-title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
