@@ -1416,7 +1416,10 @@ export function simulateCompilation(source) {
   // --- Metadata extraction ---
   const meta = extractMetadata(cleanSource);
   const isTwoColumn = meta.documentOptions.includes('twocolumn') || cleanSource.includes('5p,') || cleanSource.includes(',5p');
-  const hasArabic = /[\u0600-\u06FF]/.test(cleanSource);
+  const arabicCount = (cleanSource.match(/[\u0600-\u06FF]/g) || []).length;
+  const latinCount = (cleanSource.match(/[a-zA-Z]/g) || []).length;
+  const hasExplicitRtl = /\\usepackage\[([^\]]*arabic[^\]]*)\]\{babel\}|\\usepackage\{arabtex|\\usepackage\{arabi\}|\\setRTL|\\selectlanguage\{arabic\}/i.test(cleanSource);
+  const hasArabic = arabicCount > 0 && (hasExplicitRtl || arabicCount > latinCount * 0.1);
   const dir = hasArabic ? 'rtl' : 'ltr';
 
   // --- PASS 6: Extract special sections ---
