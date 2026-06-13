@@ -831,8 +831,8 @@ function App() {
 
   // Set direction on mount
   useEffect(() => {
-    document.documentElement.dir = 'rtl';
-    document.documentElement.lang = 'ar';
+    document.documentElement.dir = 'ltr';
+    document.documentElement.lang = 'en';
   }, []);
 
   useEffect(() => {
@@ -2512,7 +2512,7 @@ $e = mc^2$
   const activeSnapshots = projectSnapshots[activeProjectId] || [];
 
   return (
-    <div className="workspace-container" style={{ direction: 'rtl' }}>
+    <div className="workspace-container" style={{ direction: 'ltr' }}>
       
       {/* Hidden file input for Upload File */}
       <input
@@ -3508,7 +3508,7 @@ $e = mc^2$
               </div>
               
               {/* Tabs */}
-              <div className="symbol-tabs" style={{ display: 'flex', gap: '2px', padding: '6px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', background: 'var(--bg-tertiary)', direction: 'rtl' }}>
+              <div className="symbol-tabs" style={{ display: 'flex', gap: '2px', padding: '6px', borderBottom: '1px solid var(--border-color)', overflowX: 'auto', background: 'var(--bg-tertiary)', direction: 'ltr' }}>
                 {Object.keys(LATEX_SYMBOLS).map(tab => (
                   <button
                     key={tab}
@@ -3839,7 +3839,7 @@ $e = mc^2$
 
               {showEquationPreview && activeMathText && (
                 <div className="equation-preview-panel" style={{ padding: '10px 14px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', direction: 'ltr' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold', direction: 'rtl' }}>معاينة المعادلة الفورية (Real-time Math Preview):</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold', direction: 'ltr' }}>معاينة المعادلة الفورية (Real-time Math Preview):</div>
                   <div style={{ padding: '8px', background: 'white', borderRadius: '4px', overflowX: 'auto', display: 'flex', justifyContent: 'center', minHeight: '30px', color: 'black', direction: 'ltr' }}>
                     {renderMathPreview(activeMathText)}
                   </div>
@@ -3930,7 +3930,7 @@ $e = mc^2$
                     {showCompileSettings && (
                       <div className="dropdown-menu animate-fade-in" style={{ display: 'flex', position: 'absolute', top: 'calc(100% + 5px)', left: '0', right: 'auto', width: '280px', padding: '12px', flexDirection: 'column', gap: '8px', zIndex: 1000, boxShadow: 'var(--shadow-lg)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
                         {/* Auto compile option */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>تحديث تلقائي للمعاينة (Auto compile)</span>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button 
@@ -3953,7 +3953,7 @@ $e = mc^2$
                         <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
 
                         {/* Compile mode option */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>وضع التجميع (Compile mode)</span>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button 
@@ -3976,7 +3976,7 @@ $e = mc^2$
                         <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
 
                         {/* Syntax checks option */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>فحص الصيغة النحوية (Syntax checks)</span>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button 
@@ -3999,7 +3999,7 @@ $e = mc^2$
                         <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
 
                         {/* Compile error handling option */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>معالجة أخطاء التجميع (Error handling)</span>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             <button 
@@ -4245,7 +4245,7 @@ $e = mc^2$
 
                         {/* AI Suggestion */}
                         {isAiExpanded && (
-                          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(22, 163, 74, 0.2)', backgroundColor: 'rgba(22, 163, 74, 0.04)', fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(22, 163, 74, 0.2)', backgroundColor: 'rgba(22, 163, 74, 0.04)', fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontWeight: 'bold' }}>
                               <Sparkles size={12} />
                               <span>مساعد الذكاء الاصطناعي (AI Assistant):</span>
