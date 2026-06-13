@@ -1576,11 +1576,109 @@ function buildPageHTML({ meta, highlightsHtml, abstractHtml, bodyHtml, isTwoColu
 const AZURE_LATEX_URL = 'https://waraqa-latex.thankfulsky-d6df5537.uaenorth.azurecontainerapps.io';
 
 /* =========================
+   SYNTAX CHECKER
+========================= */
+function checkLatexSyntax(source) {
+  const logs = [];
+  
+  // 1. Check brackets mismatch
+  const stack = [];
+  const lines = source.split('\n');
+  for (let l = 0; l < lines.length; l++) {
+    const line = lines[l];
+    const cleanLine = line.replace(/%.*$/, '');
+    for (let c = 0; c < cleanLine.length; c++) {
+      const char = cleanLine[c];
+      if (char === '{') {
+        stack.push({ char, line: l + 1, col: c + 1 });
+      } else if (char === '}') {
+        if (stack.length === 0) {
+          logs.push({
+            type: 'error',
+            message: `Syntax Error: Mismatched closing bracket '}' at line ${l + 1}, column ${c + 1}`,
+            line: l + 1
+          });
+        } else {
+          stack.pop();
+        }
+      }
+    }
+  }
+  
+  while (stack.length > 0) {
+    const unclosed = stack.pop();
+    logs.push({
+      type: 'error',
+      message: `Syntax Error: Unclosed bracket '{' at line ${unclosed.line}, column ${unclosed.col}`,
+      line: unclosed.line
+    });
+  }
+
+  // 2. Check \begin and \end mismatch
+  const envStack = [];
+  
+  for (let l = 0; l < lines.length; l++) {
+    const line = lines[l];
+    const cleanLine = line.replace(/%.*$/, '');
+    
+    let match;
+    const regex = /\\(begin|end)\{([a-zA-Z*]+)\}/g;
+    while ((match = regex.exec(cleanLine)) !== null) {
+      const type = match[1];
+      const envName = match[2];
+      if (type === 'begin') {
+        envStack.push({ envName, line: l + 1 });
+      } else {
+        if (envStack.length === 0) {
+          logs.push({
+            type: 'error',
+            message: `Syntax Error: Mismatched \\end{${envName}} without matching \\begin at line ${l + 1}`,
+            line: l + 1
+          });
+        } else {
+          const last = envStack.pop();
+          if (last.envName !== envName) {
+            logs.push({
+              type: 'error',
+              message: `Syntax Error: Mismatched environments. Expected \\end{${last.envName}} (started at line ${last.line}) but found \\end{${envName}} at line ${l + 1}`,
+              line: l + 1
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  while (envStack.length > 0) {
+    const unclosedEnv = envStack.pop();
+    logs.push({
+      type: 'error',
+      message: `Syntax Error: Unclosed environment \\begin{${unclosedEnv.envName}} at line ${unclosedEnv.line}`,
+      line: unclosedEnv.line
+    });
+  }
+  
+  return logs;
+}
+
+/* =========================
    REAL COMPILATION (FIXED SECURITY)
 ========================= */
-export async function compileLatex(source, projectId = 'default', files = []) {
+export async function compileLatex(source, projectId = 'default', files = [], options = {}) {
   const ok = await checkPdfLatex();
   
+  // Syntax checks if enabled
+  if (options.syntaxChecks !== false) {
+    const syntaxErrors = checkLatexSyntax(source);
+    if (syntaxErrors.length > 0) {
+      return {
+        pdf: null,
+        logs: syntaxErrors,
+        success: false
+      };
+    }
+  }
+
   if (!ok) {
     // استخدم Azure إذا pdflatex غير موجود محلياً
     try {
@@ -1588,7 +1686,7 @@ export async function compileLatex(source, projectId = 'default', files = []) {
       const response = await fetch(`${AZURE_LATEX_URL}/api/compile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, files })
+        body: JSON.stringify({ source, files, options })
       });
       const data = await response.json();
       console.log('[Compiler] Azure compilation completed successfully!');
@@ -1600,6 +1698,11 @@ export async function compileLatex(source, projectId = 'default', files = []) {
   }
 
   const dir = path.join(TEMP_DIR, projectId);
+  
+  // Recompile from scratch option
+  if (options.recompile === true) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
   fs.mkdirSync(dir, { recursive: true });
 
   // Write all project files to directory
@@ -1618,11 +1721,21 @@ export async function compileLatex(source, projectId = 'default', files = []) {
   fs.writeFileSync(tex, source);
 
   return new Promise((resolve) => {
+    const errFlag = options.errorHandling === 'stop' ? '-interaction=nonstopmode -halt-on-error' : '-interaction=nonstopmode';
+    
     let cmd;
-    if (process.platform === 'win32') {
-      cmd = `cd /d "${dir}" && xelatex -interaction=nonstopmode doc.tex & bibtex doc & xelatex -interaction=nonstopmode doc.tex & xelatex -interaction=nonstopmode doc.tex`;
+    if (options.compileMode === 'fast') {
+      if (process.platform === 'win32') {
+        cmd = `cd /d "${dir}" && xelatex ${errFlag} doc.tex`;
+      } else {
+        cmd = `cd "${dir}" && xelatex ${errFlag} doc.tex`;
+      }
     } else {
-      cmd = `cd "${dir}" && xelatex -interaction=nonstopmode doc.tex ; bibtex doc ; xelatex -interaction=nonstopmode doc.tex ; xelatex -interaction=nonstopmode doc.tex`;
+      if (process.platform === 'win32') {
+        cmd = `cd /d "${dir}" && xelatex ${errFlag} doc.tex & bibtex doc & xelatex ${errFlag} doc.tex & xelatex ${errFlag} doc.tex`;
+      } else {
+        cmd = `cd "${dir}" && xelatex ${errFlag} doc.tex ; bibtex doc ; xelatex ${errFlag} doc.tex ; xelatex ${errFlag} doc.tex`;
+      }
     }
 
     const child = exec(cmd, { timeout: 30000 }, (err) => {

@@ -707,6 +707,10 @@ function App() {
   const [editorFontSize, setEditorFontSize] = useState(14);
   const [editorWordWrap, setEditorWordWrap] = useState('on');
   const [autoCompile, setAutoCompile] = useState(true);
+  const [compileMode, setCompileMode] = useState('normal'); // 'normal' | 'fast'
+  const [syntaxChecks, setSyntaxChecks] = useState(true); // true | false
+  const [errorHandling, setErrorHandling] = useState('ignore'); // 'stop' | 'ignore'
+  const [showCompileSettings, setShowCompileSettings] = useState(false);
   const [showBreadcrumbs, setShowBreadcrumbs] = useState(true);
   const [showEquationPreview, setShowEquationPreview] = useState(true);
   const [activeMathText, setActiveMathText] = useState('');
@@ -827,12 +831,12 @@ function App() {
     document.documentElement.lang = 'ar';
   }, []);
 
-  // Click-away listener for dropdown menu
   useEffect(() => {
     const handleOutsideClick = () => {
       setFileMenuOpen(false);
       setEditMenuOpen(false);
       setInsertMenuOpen(false);
+      setShowCompileSettings(false);
     };
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
@@ -988,7 +992,7 @@ function App() {
   };
 
   // Compile LaTeX Document
-  const handleCompile = async () => {
+  const handleCompile = async (optionsOverride = {}) => {
     if (!activeProject) return;
     setIsCompiling(true);
     setCompileProgress(0);
@@ -1038,7 +1042,18 @@ function App() {
 
     try {
       const mainFile = activeProject.files.find(f => f.path === activeFilePath);
-      const compileBody = (mainFile && latestContent) ? { path: activeFilePath, content: latestContent } : {};
+      const compileBody = {
+        options: {
+          compileMode,
+          syntaxChecks,
+          errorHandling,
+          ...optionsOverride
+        }
+      };
+      if (mainFile && latestContent) {
+        compileBody.path = activeFilePath;
+        compileBody.content = latestContent;
+      }
 
       const compileRes = await fetch(`${BACKEND_URL}/api/projects/${activeProjectId}/compile`, {
         method: 'POST',
@@ -3859,22 +3874,142 @@ $e = mc^2$
                     </button>
                   </div>
 
-                  {/* Recompile Button */}
-                  <button
-                    className="btn-primary"
-                    style={{ padding: '3px 10px', fontSize: '0.8rem', minHeight: '26px' }}
-                    onClick={handleCompile}
-                    disabled={isCompiling}
-                  >
-                    {isCompiling ? (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <RotateCw size={12} className="compiler-spinner" />
-                        <span>{compileProgress}%</span>
-                      </span>
-                    ) : (
-                      <span>تحديث التجميع</span>
+                  {/* Compile Button with Dropdown Settings */}
+                  <div className="dropdown-container" onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '1px', alignItems: 'center', position: 'relative' }}>
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '3px 10px', fontSize: '0.8rem', minHeight: '26px', borderTopLeftRadius: '0', borderBottomLeftRadius: '0', borderTopRightRadius: 'var(--radius-sm)', borderBottomRightRadius: 'var(--radius-sm)' }}
+                      onClick={() => handleCompile()}
+                      disabled={isCompiling}
+                    >
+                      {isCompiling ? (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <RotateCw size={12} className="compiler-spinner" />
+                          <span>{compileProgress}%</span>
+                        </span>
+                      ) : (
+                        <span>تحديث التجميع</span>
+                      )}
+                    </button>
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '3px 6px', fontSize: '0.8rem', minHeight: '26px', borderTopRightRadius: '0', borderBottomRightRadius: '0', borderTopLeftRadius: 'var(--radius-sm)', borderBottomLeftRadius: 'var(--radius-sm)', borderRight: '1px solid rgba(255,255,255,0.2)' }}
+                      onClick={() => setShowCompileSettings(!showCompileSettings)}
+                      title="خيارات التجميع"
+                    >
+                      <Settings size={12} />
+                    </button>
+
+                    {showCompileSettings && (
+                      <div className="dropdown-menu animate-fade-in" style={{ display: 'flex', position: 'absolute', top: 'calc(100% + 5px)', left: '0', right: 'auto', width: '280px', padding: '12px', flexDirection: 'column', gap: '8px', zIndex: 1000, boxShadow: 'var(--shadow-lg)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
+                        {/* Auto compile option */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>تحديث تلقائي للمعاينة (Auto compile)</span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: autoCompile ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: autoCompile ? 'var(--accent-glow)' : 'transparent', color: autoCompile ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: autoCompile ? '600' : 'normal' }}
+                              onClick={() => setAutoCompile(true)}
+                            >
+                              تشغيل (On)
+                            </button>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: !autoCompile ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: !autoCompile ? 'var(--accent-glow)' : 'transparent', color: !autoCompile ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: !autoCompile ? '600' : 'normal' }}
+                              onClick={() => setAutoCompile(false)}
+                            >
+                              إيقاف (Off)
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
+
+                        {/* Compile mode option */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>وضع التجميع (Compile mode)</span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: compileMode === 'normal' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: compileMode === 'normal' ? 'var(--accent-glow)' : 'transparent', color: compileMode === 'normal' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: compileMode === 'normal' ? '600' : 'normal' }}
+                              onClick={() => setCompileMode('normal')}
+                            >
+                              عادي (Normal)
+                            </button>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: compileMode === 'fast' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: compileMode === 'fast' ? 'var(--accent-glow)' : 'transparent', color: compileMode === 'fast' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: compileMode === 'fast' ? '600' : 'normal' }}
+                              onClick={() => setCompileMode('fast')}
+                            >
+                              سريع [مسودة] (Fast)
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
+
+                        {/* Syntax checks option */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>فحص الصيغة النحوية (Syntax checks)</span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: syntaxChecks ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: syntaxChecks ? 'var(--accent-glow)' : 'transparent', color: syntaxChecks ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: syntaxChecks ? '600' : 'normal' }}
+                              onClick={() => setSyntaxChecks(true)}
+                            >
+                              فحص قبل التجميع
+                            </button>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: !syntaxChecks ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: !syntaxChecks ? 'var(--accent-glow)' : 'transparent', color: !syntaxChecks ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: !syntaxChecks ? '600' : 'normal' }}
+                              onClick={() => setSyntaxChecks(false)}
+                            >
+                              بدون فحص
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
+
+                        {/* Compile error handling option */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>معالجة أخطاء التجميع (Error handling)</span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: errorHandling === 'stop' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: errorHandling === 'stop' ? 'var(--accent-glow)' : 'transparent', color: errorHandling === 'stop' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: errorHandling === 'stop' ? '600' : 'normal' }}
+                              onClick={() => setErrorHandling('stop')}
+                            >
+                              إيقاف عند أول خطأ
+                            </button>
+                            <button 
+                              className="back-btn"
+                              style={{ flex: 1, padding: '4px', fontSize: '0.75rem', justifyContent: 'center', border: errorHandling === 'ignore' ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', backgroundColor: errorHandling === 'ignore' ? 'var(--accent-glow)' : 'transparent', color: errorHandling === 'ignore' ? 'var(--accent-color)' : 'var(--text-secondary)', fontWeight: errorHandling === 'ignore' ? '600' : 'normal' }}
+                              onClick={() => setErrorHandling('ignore')}
+                            >
+                              تجميع رغم الأخطاء
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="dropdown-divider" style={{ margin: '4px 0' }}></div>
+
+                        {/* Recompile Button */}
+                        <button
+                          className="back-btn"
+                          style={{ width: '100%', padding: '6px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', borderRadius: 'var(--radius-sm)', borderColor: 'var(--error)', color: 'var(--error)', backgroundColor: 'rgba(220, 38, 38, 0.05)' }}
+                          onClick={() => {
+                            setShowCompileSettings(false);
+                            handleCompile({ recompile: true });
+                          }}
+                          disabled={isCompiling}
+                        >
+                          <RotateCw size={12} />
+                          <span>إعادة التجميع من الصفر (Recompile)</span>
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
 

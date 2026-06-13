@@ -274,7 +274,7 @@ app.post('/api/projects/:id/files/rename', (req, res) => {
 // Compile LaTeX document endpoint
 app.post('/api/projects/:id/compile', async (req, res) => {
   const { id } = req.params;
-  const { path: filePath, content } = req.body;
+  const { path: filePath, content, options } = req.body;
   const db = readDb();
   const project = db.find(p => p.id === id);
 
@@ -300,7 +300,7 @@ app.post('/api/projects/:id/compile', async (req, res) => {
   }
 
   try {
-    const result = await compileLatex(mainFile.content, id, project.files);
+    const result = await compileLatex(mainFile.content, id, project.files, options || {});
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: 'Compilation server error', details: error.message });
