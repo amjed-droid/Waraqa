@@ -202,6 +202,18 @@ app.get('/api/projects/:id', (req, res) => {
   res.json(project);
 });
 
+// Delete a project
+app.delete('/api/projects/:id', (req, res) => {
+  const db = readDb();
+  const index = db.findIndex(p => p.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Project not found' });
+  }
+  db.splice(index, 1);
+  writeDb(db);
+  res.json({ success: true });
+});
+
 // Create/Update a file in a project
 app.post('/api/projects/:id/files', (req, res) => {
   const { path: filePath, content } = req.body;

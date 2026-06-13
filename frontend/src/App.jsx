@@ -122,7 +122,10 @@ import {
   Bot,
   Wand2,
   Languages,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  Archive,
+  X
 } from 'lucide-react';
 
 const LATEX_SYMBOLS = {
@@ -654,6 +657,9 @@ function App() {
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
+  const [dashboardTab, setDashboardTab] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   
   // File System & Sidebar Tabs State
   const [activeFilePath, setActiveFilePath] = useState('main.tex');
@@ -867,6 +873,33 @@ function App() {
         createdAt: p.createdAt,
         fileCount: p.files.length
       })));
+    }
+  };
+
+  const handleDeleteProject = async (id, e) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المشروع نهائياً؟')) return;
+
+    if (isOffline) {
+      setProjects(prev => prev.filter(p => p.id !== id));
+      addLog({ type: 'info', message: 'تم حذف المشروع من الذاكرة المحلية.' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/projects/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setProjects(prev => prev.filter(p => p.id !== id));
+        addLog({ type: 'info', message: 'تم حذف المشروع بنجاح.' });
+      } else {
+        const data = await res.json();
+        alert(data.error || 'فشل في حذف المشروع.');
+      }
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      alert('خطأ في الاتصال بالخادم لحذف المشروع.');
     }
   };
 
@@ -2732,83 +2765,291 @@ $e = mc^2$
       )}
 
       {/* 5. Landing Page State */}
-      {!activeProjectId ? (
-        <div className="landing-container">
-          <div className="landing-card animate-fade-in">
-            <div className="logo-container">
-              <div className="logo-icon">📝</div>
-              <div className="logo-text">ورقة</div>
-            </div>
-            <p className="landing-subtitle">محرر LaTeX التعاوني الأكاديمي المتكامل</p>
+      {!activeProjectId ? (() => {
+        const filteredProjects = projects.filter(proj => {
+          if (searchQuery && !proj.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+            return false;
+          }
+          if (dashboardTab === 'all') return true;
+          if (dashboardTab === 'recent') {
+            const diffTime = Math.abs(new Date() - new Date(proj.createdAt));
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays <= 7;
+          }
+          return false;
+        });
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-              {isOffline ? (
-                <span style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <AlertTriangle size={14} /> وضع العمل المحلي (Server Offline)
-                </span>
-              ) : (
-                <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle size={14} /> متصل بالخادم الرئيسي
-                </span>
-              )}
-            </div>
+        return (
+          <div className="dashboard-container animate-fade-in">
+            {/* Sidebar */}
+            <aside className="dashboard-sidebar">
+              <div className="brand-section">
+                <span className="brand-logo-icon">📝</span>
+                <span className="brand-name">Waraqa</span>
+              </div>
 
-            {/* New Project form */}
-            <form onSubmit={handleCreateProject} className="project-form">
-              <div className="form-group">
-                <input
-                  type="text"
-                  name="projectName"
-                  className="input-text"
-                  placeholder="اسم المشروع الأكاديمي الجديد..."
-                  required
-                />
-                <button type="submit" className="btn-primary">
-                  <Plus size={18} /> إنشاء مشروع
+              <div className="new-project-section">
+                <button 
+                  type="button" 
+                  className="btn-new-project"
+                  onClick={() => setShowCreateModal(true)}
+                >
+                  <Plus size={18} />
+                  <span>New Project</span>
                 </button>
               </div>
-            </form>
 
-            {/* Projects list */}
-            <div className="project-list-section">
-              <h4 className="section-title">المشاريع المتاحة ({projects.length})</h4>
-              {projects.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                  لا يوجد مشاريع بعد. اكتب اسماً أعلاه لإنشاء أول مشروع لك!
+              <nav className="sidebar-nav">
+                <button 
+                  className={`nav-item ${dashboardTab === 'all' ? 'active' : ''}`}
+                  onClick={() => setDashboardTab('all')}
+                >
+                  <Folder size={16} />
+                  <span>All Projects</span>
+                </button>
+                <button 
+                  className={`nav-item ${dashboardTab === 'recent' ? 'active' : ''}`}
+                  onClick={() => setDashboardTab('recent')}
+                >
+                  <Clock size={16} />
+                  <span>Recent Projects</span>
+                </button>
+                <button 
+                  className={`nav-item ${dashboardTab === 'shared' ? 'active' : ''}`}
+                  onClick={() => setDashboardTab('shared')}
+                >
+                  <Users size={16} />
+                  <span>Shared with me</span>
+                </button>
+                <button 
+                  className={`nav-item ${dashboardTab === 'archived' ? 'active' : ''}`}
+                  onClick={() => setDashboardTab('archived')}
+                >
+                  <Archive size={16} />
+                  <span>Archived</span>
+                </button>
+                <button 
+                  className={`nav-item ${dashboardTab === 'trash' ? 'active' : ''}`}
+                  onClick={() => setDashboardTab('trash')}
+                >
+                  <Trash2 size={16} />
+                  <span>Trash</span>
+                </button>
+              </nav>
+
+              <div className="sidebar-footer">
+                <div className="user-profile-card">
+                  <div className="user-avatar">
+                    {userName ? userName.substring(0, 2).toUpperCase() : 'U'}
+                  </div>
+                  <div className="user-info">
+                    <span className="user-name">{userName || 'User'}</span>
+                    <span className="user-role">Academic Author</span>
+                  </div>
+                  <button 
+                    className="btn-logout"
+                    onClick={() => { localStorage.removeItem('waraqa_username'); setUserName(''); }}
+                    title="Change Name / Logout"
+                  >
+                    <LogOut size={16} />
+                  </button>
                 </div>
-              ) : (
-                <div className="projects-grid">
-                  {projects.map((proj) => (
-                    <div
-                      key={proj.id}
-                      className="project-card"
-                      onClick={() => setActiveProjectId(proj.id)}
-                    >
-                      <div className="project-info">
-                        <span className="project-name">{proj.name}</span>
-                        <span className="project-meta">
-                          {new Date(proj.createdAt).toLocaleDateString('ar-EG')} • {proj.fileCount || 1} ملفات
-                        </span>
-                      </div>
-                      <ChevronLeft className="project-action-icon" size={18} />
+              </div>
+            </aside>
+
+            {/* Main Area */}
+            <main className="dashboard-main">
+              {/* Top Bar */}
+              <header className="dashboard-header">
+                <div className="search-bar-container">
+                  <Search size={18} className="search-icon" />
+                  <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="Search in your projects..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                <div className="header-status-area">
+                  {isOffline ? (
+                    <span className="status-badge status-offline">
+                      <span className="status-dot"></span>
+                      Offline Mode
+                    </span>
+                  ) : (
+                    <span className="status-badge status-online">
+                      <span className="status-dot"></span>
+                      Connected to Main Server
+                    </span>
+                  )}
+                </div>
+              </header>
+
+              {/* Content Area */}
+              <div className="dashboard-content">
+                {/* Welcome Banner */}
+                <div className="welcome-banner">
+                  <div className="banner-text">
+                    <h1>Welcome back, {userName}!</h1>
+                    <p>Create, edit, and collaborate on your academic LaTeX papers with ease.</p>
+                  </div>
+                  <div className="banner-illustration">
+                    <div className="floating-shape shape-1"></div>
+                    <div className="floating-shape shape-2"></div>
+                  </div>
+                </div>
+
+                {/* Projects List Container */}
+                <div className="projects-list-container">
+                  <div className="list-header">
+                    <div className="list-title-group">
+                      <h2>All Projects</h2>
+                      <span className="projects-count">{filteredProjects.length} Projects</span>
                     </div>
-                  ))}
+                  </div>
+
+                  {filteredProjects.length === 0 ? (
+                    <div className="empty-state-container">
+                      <div className="empty-state-icon">📂</div>
+                      <h3>No projects found</h3>
+                      <p>
+                        {searchQuery 
+                          ? "We couldn't find any projects matching your search." 
+                          : "You haven't created any projects yet. Click 'New Project' on the sidebar to get started!"}
+                      </p>
+                      {!searchQuery && (
+                        <button 
+                          className="btn-primary-dashboard"
+                          onClick={() => setShowCreateModal(true)}
+                        >
+                          <Plus size={16} /> Create First Project
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="projects-table-wrapper">
+                      <table className="projects-table">
+                        <thead>
+                          <tr>
+                            <th className="col-name">Title</th>
+                            <th className="col-owner">Owner</th>
+                            <th className="col-modified">Last Modified</th>
+                            <th className="col-files">Files</th>
+                            <th className="col-actions">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredProjects.map((proj) => (
+                            <tr 
+                              key={proj.id} 
+                              className="project-row"
+                              onClick={() => setActiveProjectId(proj.id)}
+                            >
+                              <td className="col-name">
+                                <div className="project-title-wrapper">
+                                  <div className="file-icon-wrapper">
+                                    <FileText size={20} className="file-icon" />
+                                  </div>
+                                  <div className="project-title-meta">
+                                    <span className="project-title-name">{proj.name}</span>
+                                    <span className="project-title-sub">LaTeX Document</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="col-owner">
+                                <span className="owner-badge">You</span>
+                              </td>
+                              <td className="col-modified">
+                                <span className="modified-time">
+                                  {new Date(proj.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
+                                </span>
+                              </td>
+                              <td className="col-files">
+                                <span className="files-count-badge">
+                                  {proj.fileCount || 1} files
+                                </span>
+                              </td>
+                              <td className="col-actions" onClick={(e) => e.stopPropagation()}>
+                                <div className="action-buttons-group">
+                                  <button 
+                                    className="action-btn-dashboard btn-open"
+                                    onClick={() => setActiveProjectId(proj.id)}
+                                    title="Open Project"
+                                  >
+                                    <ChevronLeft size={16} />
+                                  </button>
+                                  <button 
+                                    className="action-btn-dashboard btn-delete"
+                                    onClick={(e) => handleDeleteProject(proj.id, e)}
+                                    title="Delete Project"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              <span>مرحباً، {userName}</span>
-              <button 
-                onClick={() => { localStorage.removeItem('waraqa_username'); setUserName(''); }}
-                style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <LogOut size={12} /> تغيير الاسم
-              </button>
-            </div>
+              </div>
+            </main>
+
+            {/* Create Project Modal */}
+            {showCreateModal && (
+              <div className="dashboard-modal-overlay">
+                <div className="dashboard-modal animate-scale-in">
+                  <div className="modal-header-dashboard">
+                    <h3>Create New Project</h3>
+                    <button className="btn-close-modal" onClick={() => setShowCreateModal(false)}>
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <form onSubmit={(e) => {
+                    handleCreateProject(e);
+                    setShowCreateModal(false);
+                  }} className="modal-form-dashboard">
+                    <div className="modal-body-dashboard">
+                      <label className="form-label-dashboard">Project Name</label>
+                      <input 
+                        type="text"
+                        name="projectName"
+                        className="form-input-dashboard"
+                        placeholder="e.g., Astrophysics Thesis, Machine Learning Paper..."
+                        required
+                        autoFocus
+                      />
+                      <p className="form-help-dashboard">
+                        Your project will be initialized with a standard Elsarticle/academic document template.
+                      </p>
+                    </div>
+                    <div className="modal-footer-dashboard">
+                      <button 
+                        type="button" 
+                        className="btn-cancel-dashboard"
+                        onClick={() => setShowCreateModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" className="btn-submit-dashboard">
+                        Create Project
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      ) : (
+        );
+      })() : (
         
         // 6. Workspace layout
         <div className="workspace-container animate-fade-in">
