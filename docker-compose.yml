@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  waraqa-server:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/temp_builds:/app/temp_builds
+      - ./backend/database.json:/app/database.json
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    restart: unless-stopped
