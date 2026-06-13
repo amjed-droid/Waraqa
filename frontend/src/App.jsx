@@ -4191,7 +4191,12 @@ $e = mc^2$
                         <div style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', justifyContent: 'space-between', gap: '8px' }}>
                           <div 
                             style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', flex: 1, cursor: 'pointer', textAlign: 'right' }} 
-                            onClick={() => setExpandedLogs(prev => ({ ...prev, [index]: !prev[index] }))}
+                            onClick={() => {
+                              if (log.line) {
+                                jumpToLine(log.line);
+                              }
+                              setExpandedLogs(prev => ({ ...prev, [index]: !prev[index] }));
+                            }}
                           >
                             <span style={{ display: 'inline-flex', marginTop: '3px' }}>
                               {isExpanded ? <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} /> : <ChevronLeft size={14} style={{ color: 'var(--text-secondary)' }} />}
