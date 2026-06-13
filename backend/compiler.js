@@ -1575,6 +1575,26 @@ function buildPageHTML({ meta, highlightsHtml, abstractHtml, bodyHtml, isTwoColu
 
 const AZURE_LATEX_URL = 'https://waraqa-latex.thankfulsky-d6df5537.uaenorth.azurecontainerapps.io';
 
+function stripLatexComments(line) {
+  let cleanLine = '';
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '%') {
+      let backslashCount = 0;
+      let idx = i - 1;
+      while (idx >= 0 && line[idx] === '\\') {
+        backslashCount++;
+        idx--;
+      }
+      if (backslashCount % 2 === 0) {
+        break; // Unescaped % starts a comment
+      }
+    }
+    cleanLine += char;
+  }
+  return cleanLine;
+}
+
 /* =========================
    SYNTAX CHECKER
 ========================= */
@@ -1586,7 +1606,7 @@ function checkLatexSyntax(source) {
   const lines = source.split('\n');
   for (let l = 0; l < lines.length; l++) {
     const line = lines[l];
-    const cleanLine = line.replace(/%.*$/, '');
+    const cleanLine = stripLatexComments(line);
     for (let c = 0; c < cleanLine.length; c++) {
       const char = cleanLine[c];
       
@@ -1636,7 +1656,7 @@ function checkLatexSyntax(source) {
   
   for (let l = 0; l < lines.length; l++) {
     const line = lines[l];
-    const cleanLine = line.replace(/%.*$/, '');
+    const cleanLine = stripLatexComments(line);
     
     let match;
     const regex = /\\(begin|end)\{([a-zA-Z*]+)\}/g;
