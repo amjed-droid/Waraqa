@@ -1589,6 +1589,21 @@ function checkLatexSyntax(source) {
     const cleanLine = line.replace(/%.*$/, '');
     for (let c = 0; c < cleanLine.length; c++) {
       const char = cleanLine[c];
+      
+      // Check if bracket is escaped (preceded by odd number of backslashes)
+      if (char === '{' || char === '}') {
+        let backslashCount = 0;
+        let idx = c - 1;
+        while (idx >= 0 && cleanLine[idx] === '\\') {
+          backslashCount++;
+          idx--;
+        }
+        const isEscaped = backslashCount % 2 === 1;
+        if (isEscaped) {
+          continue; // Skip escaped curly braces \{ and \}
+        }
+      }
+
       if (char === '{') {
         stack.push({ char, line: l + 1, col: c + 1 });
       } else if (char === '}') {
@@ -1596,7 +1611,8 @@ function checkLatexSyntax(source) {
           logs.push({
             type: 'error',
             message: `Syntax Error: Mismatched closing bracket '}' at line ${l + 1}, column ${c + 1}`,
-            line: l + 1
+            line: l + 1,
+            path: 'main.tex'
           });
         } else {
           stack.pop();
@@ -1610,7 +1626,8 @@ function checkLatexSyntax(source) {
     logs.push({
       type: 'error',
       message: `Syntax Error: Unclosed bracket '{' at line ${unclosed.line}, column ${unclosed.col}`,
-      line: unclosed.line
+      line: unclosed.line,
+      path: 'main.tex'
     });
   }
 
@@ -1633,7 +1650,8 @@ function checkLatexSyntax(source) {
           logs.push({
             type: 'error',
             message: `Syntax Error: Mismatched \\end{${envName}} without matching \\begin at line ${l + 1}`,
-            line: l + 1
+            line: l + 1,
+            path: 'main.tex'
           });
         } else {
           const last = envStack.pop();
@@ -1641,7 +1659,8 @@ function checkLatexSyntax(source) {
             logs.push({
               type: 'error',
               message: `Syntax Error: Mismatched environments. Expected \\end{${last.envName}} (started at line ${last.line}) but found \\end{${envName}} at line ${l + 1}`,
-              line: l + 1
+              line: l + 1,
+              path: 'main.tex'
             });
           }
         }
@@ -1654,7 +1673,8 @@ function checkLatexSyntax(source) {
     logs.push({
       type: 'error',
       message: `Syntax Error: Unclosed environment \\begin{${unclosedEnv.envName}} at line ${unclosedEnv.line}`,
-      line: unclosedEnv.line
+      line: unclosedEnv.line,
+      path: 'main.tex'
     });
   }
   

@@ -4183,7 +4183,8 @@ $e = mc^2$
                           borderRadius: 'var(--radius-sm)',
                           marginBottom: '8px',
                           overflow: 'hidden',
-                          transition: 'all 0.15s ease'
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
                         }}
                       >
                         {/* Header Row */}
