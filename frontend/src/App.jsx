@@ -4069,67 +4069,66 @@ $e = mc^2$
           </div>
 
           {/* Console / Terminal logs */}
-          <div className="console-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '0' }}>
-            <div className="console-header" style={{ paddingBottom: '6px' }}>
-              <span className="console-title" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Terminal size={14} /> سجل التجميع والأخطاء
-              </span>
+          <div className="console-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Unified Console Header with Tabs */}
+            <div className="console-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 12px', height: '36px', background: '#f1f5f9', borderBottom: '1px solid var(--border-color)', direction: 'rtl', flexShrink: 0 }}>
+              {/* Right side: Tabs */}
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '100%' }}>
+                <button 
+                  onClick={() => setLogFilter('all')}
+                  style={{ 
+                    background: 'none', border: 'none', color: logFilter === 'all' ? 'var(--accent-color)' : 'var(--text-secondary)', 
+                    fontWeight: logFilter === 'all' ? 'bold' : 'normal', borderBottom: logFilter === 'all' ? '2px solid var(--accent-color)' : '2px solid transparent', 
+                    height: '100%', padding: '0 8px', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, transition: 'all 0.15s'
+                  }}
+                >
+                  <span style={{ direction: 'ltr' }}>All logs</span>
+                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.length}</span>
+                </button>
+                <button 
+                  onClick={() => setLogFilter('error')}
+                  style={{ 
+                    background: 'none', border: 'none', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', 
+                    fontWeight: logFilter === 'error' ? 'bold' : 'normal', borderBottom: logFilter === 'error' ? '2px solid var(--error)' : '2px solid transparent', 
+                    height: '100%', padding: '0 8px', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, transition: 'all 0.15s'
+                  }}
+                >
+                  <span style={{ direction: 'ltr' }}>Errors</span>
+                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(0, 0, 0, 0.06)', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'error').length}</span>
+                </button>
+                <button 
+                  onClick={() => setLogFilter('warning')}
+                  style={{ 
+                    background: 'none', border: 'none', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', 
+                    fontWeight: logFilter === 'warning' ? 'bold' : 'normal', borderBottom: logFilter === 'warning' ? '2px solid var(--warning)' : '2px solid transparent', 
+                    height: '100%', padding: '0 8px', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, transition: 'all 0.15s'
+                  }}
+                >
+                  <span style={{ direction: 'ltr' }}>Warnings</span>
+                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'warning' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(0, 0, 0, 0.06)', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'warning').length}</span>
+                </button>
+                <button 
+                  onClick={() => setLogFilter('info')}
+                  style={{ 
+                    background: 'none', border: 'none', color: logFilter === 'info' ? 'var(--info)' : 'var(--text-secondary)', 
+                    fontWeight: logFilter === 'info' ? 'bold' : 'normal', borderBottom: logFilter === 'info' ? '2px solid var(--info)' : '2px solid transparent', 
+                    height: '100%', padding: '0 8px', cursor: 'pointer', fontSize: '0.78rem', display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0, transition: 'all 0.15s'
+                  }}
+                >
+                  <span style={{ direction: 'ltr' }}>Info</span>
+                  <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'rgba(0,0,0,0.06)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'info' || l.type === 'success' || !l.type).length}</span>
+                </button>
+              </div>
+
+              {/* Left side: Clear Button */}
               <button 
                 onClick={() => {
                   setConsoleLogs([]);
                   setExpandedLogs({});
                 }} 
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '500' }}
               >
                 مسح السجلات
-              </button>
-            </div>
-
-            {/* Custom Tab Filters */}
-            <div className="console-tabs" style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', padding: '4px 12px 8px 12px', marginBottom: '10px', direction: 'rtl' }}>
-              <button 
-                onClick={() => setLogFilter('all')}
-                style={{ 
-                  background: 'none', border: 'none', color: logFilter === 'all' ? 'var(--accent-color)' : 'var(--text-secondary)', 
-                  fontWeight: logFilter === 'all' ? 'bold' : 'normal', borderBottom: logFilter === 'all' ? '2px solid var(--accent-color)' : '2px solid transparent', 
-                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
-                }}
-              >
-                <span>الكل (All logs)</span>
-                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.length}</span>
-              </button>
-              <button 
-                onClick={() => setLogFilter('error')}
-                style={{ 
-                  background: 'none', border: 'none', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', 
-                  fontWeight: logFilter === 'error' ? 'bold' : 'normal', borderBottom: logFilter === 'error' ? '2px solid var(--error)' : '2px solid transparent', 
-                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
-                }}
-              >
-                <span>الأخطاء (Errors)</span>
-                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'var(--bg-tertiary)', color: logFilter === 'error' ? 'var(--error)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'error').length}</span>
-              </button>
-              <button 
-                onClick={() => setLogFilter('warning')}
-                style={{ 
-                  background: 'none', border: 'none', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', 
-                  fontWeight: logFilter === 'warning' ? 'bold' : 'normal', borderBottom: logFilter === 'warning' ? '2px solid var(--warning)' : '2px solid transparent', 
-                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
-                }}
-              >
-                <span>التحذيرات (Warnings)</span>
-                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: logFilter === 'warning' ? 'rgba(217, 119, 6, 0.1)' : 'var(--bg-tertiary)', color: logFilter === 'warning' ? 'var(--warning)' : 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'warning').length}</span>
-              </button>
-              <button 
-                onClick={() => setLogFilter('info')}
-                style={{ 
-                  background: 'none', border: 'none', color: logFilter === 'info' ? 'var(--info)' : 'var(--text-secondary)', 
-                  fontWeight: logFilter === 'info' ? 'bold' : 'normal', borderBottom: logFilter === 'info' ? '2px solid var(--info)' : '2px solid transparent', 
-                  paddingBottom: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', transition: 'all 0.15s'
-                }}
-              >
-                <span>معلومات (Info)</span>
-                <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{consoleLogs.filter(l => l.type === 'info' || l.type === 'success' || !l.type).length}</span>
               </button>
             </div>
             
