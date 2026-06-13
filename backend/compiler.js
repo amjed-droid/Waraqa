@@ -1706,12 +1706,23 @@ function checkLatexSyntax(source) {
 
 /* =========================
    REAL COMPILATION (FIXED SECURITY)
-========================= */
+ ========================= */
+function selectEngine(source) {
+  const hasArabicChars = /[\u0600-\u06FF]/.test(source);
+  const needsXeOrLua = /\\usepackage(\[[^\]]*\])?\{(fontspec|polyglossia|xeCJK)\}/.test(source)
+    || /\\setmainfont|\\setarabicfont|\\newfontfamily/.test(source);
+
+  if (hasArabicChars || needsXeOrLua) {
+    return 'xelatex';
+  }
+  return 'pdflatex'; // الافتراضي — يدعم txfonts, natbib, elsarticle, IEEEtran... إلخ
+}
+
 export async function compileLatex(source, projectId = 'default', files = [], options = {}) {
   // Detect missing graphics and inject stubs into files
   const graphicsRegex = /\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}/g;
   let match;
-  const stubPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const stubPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAMgAAACWCAIAAAAUvlBOAAABmElEQVR4nO3SQQ0AIRDAwOP8i10JmKAhITMK+uiamQ9O+28H8CZjkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBYJY5EwFgljkTAWCWORMBaJDWHcA/yd4cinAAAAAElFTkSuQmCC';
   const stubPdfBase64 = Buffer.from(
     '%PDF-1.4\n' +
     '1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n' +
@@ -1804,19 +1815,20 @@ export async function compileLatex(source, projectId = 'default', files = [], op
 
   return new Promise((resolve) => {
     const errFlag = options.errorHandling === 'stop' ? '-interaction=nonstopmode -halt-on-error' : '-interaction=nonstopmode';
-    
+    const engine = options.engine || selectEngine(source);
+
     let cmd;
     if (options.compileMode === 'fast') {
       if (process.platform === 'win32') {
-        cmd = `cd /d "${dir}" && xelatex ${errFlag} doc.tex`;
+        cmd = `cd /d "${dir}" && ${engine} ${errFlag} doc.tex`;
       } else {
-        cmd = `cd "${dir}" && xelatex ${errFlag} doc.tex`;
+        cmd = `cd "${dir}" && ${engine} ${errFlag} doc.tex`;
       }
     } else {
       if (process.platform === 'win32') {
-        cmd = `cd /d "${dir}" && xelatex ${errFlag} doc.tex & bibtex doc & xelatex ${errFlag} doc.tex & xelatex ${errFlag} doc.tex`;
+        cmd = `cd /d "${dir}" && ${engine} ${errFlag} doc.tex & bibtex doc & ${engine} ${errFlag} doc.tex & ${engine} ${errFlag} doc.tex`;
       } else {
-        cmd = `cd "${dir}" && xelatex ${errFlag} doc.tex ; bibtex doc ; xelatex ${errFlag} doc.tex ; xelatex ${errFlag} doc.tex`;
+        cmd = `cd "${dir}" && ${engine} ${errFlag} doc.tex ; bibtex doc ; ${engine} ${errFlag} doc.tex ; ${engine} ${errFlag} doc.tex`;
       }
     }
 
